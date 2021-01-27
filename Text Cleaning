@@ -1,8 +1,26 @@
+#### tools already exist for cleaning data and text, eg: https://www.rdocumentation.org/packages/textclean/versions/0.9.3
+# However given the particular issues encountered addressing (plant) collection databases, bespoke code was simpler and allowed more control of exceptional cases.
+# NB differences and conversion between encoding system can horribly confuse this process. In this case take care to check correct recognition of input of, conversion to and subsequent use of, UTF8
+
 
 # For this example
 # dataframe to be cleaned = df.corrupt
 # dataframe column to be cleaned = NameFull
 
+
+library(stringr)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(data.table)
+library(utf8)
+
+
+# read in data. Using "fread" allows much faster loading of large datasets and can define subset at loading to reduce memory use.
+# fread has defaults recognizing delimiters, and in how it handles some characters, so check inport carefull first time.
+
+df.corrupt <- fread("input.txt", 
+              select = c("scientificName", "scientificNameAuthorship", "namePublishedIn", "taxonomicStatus")) #selects only columns we are interested in cleaning
 
 ###### replace multiple spaces with single spaces
 df.corrupt[] <- lapply(df.corrupt, function(x) (gsub('  +', ' ', x)))
