@@ -105,3 +105,10 @@ for(x in 1:nrow(char_sub))
 
 write.table(df.corrupt,'df.clean.txt', sep="|", quote=FALSE, row.names = FALSE) # output corrupt records. I like using pipe separator "|" instad of commas or tabs as it is least likely to conflict with characters in the text
 
+
+
+### BONUS: in one of my databases (Global Compositae Database) for reasons best known to nooone, "á" had been replaced with non-breaking spaces.
+As an example of how to clean an unwanted character using the unicode designation (in theis case for non-breakingspace "u00A0") with a backslash to escape the special character:                                                      
+
+df.clean <- df.corrupt
+df.clean$NameFull <- (gsub("\u00A0", "á", df.clean$NameFull, fixed = TRUE))
