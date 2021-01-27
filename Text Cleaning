@@ -1,0 +1,89 @@
+
+# For this example
+# dataframe to be cleaned = df.corrupt
+# dataframe column to be cleaned = NameFull
+
+
+###### replace multiple spaces with single spaces
+df.corrupt[] <- lapply(df.corrupt, function(x) (gsub('  +', ' ', x)))
+
+
+###### Identify question marks in species binomials
+## Some databases have trouble with the x designation infront of hybrid names, often replacing it with "?". This code replaces these
+## NB this does not identify "?" in subspecies or names outside the binomial
+
+matches <- grepl("\\?", df.corrupt$NameFull) # creates a logical vector for each row: TRUE = match, FALSE = no match
+df.hits <- df.corrupt[matches,] # lists all cells with "?"
+
+# For binomials with a leading "?" this typically indicates a missing/corrupt "×" designating hybrid status. NB "×" is a multiplication sign (U+2715) NOT a clear-text "x"
+# To substitute "?" for "×" only at the beginning of a binomial:
+df.corrupt$NameFull <- str_replace_all(df.corrupt$NameFull, "^\\?|(?<=^(\\?)?\\b\\w{1,100}\\b\\s)\\?", "×") # replaces "?" in binomial (first two words) with "×" as hybrid designation
+
+# repeat search for "?" to identify any non-hybrid designating questionmarks
+residual.Qmarks <- grepl("\\?", df.corrupt$AcceptedName) # creates a logical vector for each row: TRUE = match, FALSE = no match
+residual.Qmarks <- df.corrupt[residual.Qmarks,] # lists all remaining cells with "?". This may be hybrid designation outside the binomial or other corruption in the authority names
+residual.Qmarks
+write.csv(residual.Qmarks,'residual.Qmarks.txt', sep = "|", fileEncoding = "UTF-16") # output likely corrupt "?" records
+
+
+###### Identify all special/potentially corrupt characters
+exotic.chr.check <- setDT(df.corrupt)[, .(NameFull=unlist(str_extract_all(NameFull, "\\w+([^ -~]|\\?)\\w+"))), by = NameFull] #pull out all words with non-ASCII characters (^ to ~) and question marks https://stackoverflow.com/questions/43708888/regex-matching-utf-8-pattern-in-r
+exotic.chr.check <- select(exotic.chr.check,-c(1)) # Remove unwanted first column
+colnames(exotic.chr.check)<-c('Bad.Names') # create new column
+exotic.chr.check$Bad.Names <- as.data.frame(unique(exotic.chr.check$NameFull)) # Reduce to unique instances of each word with non-standard character(s) in data
+exotic.chr.check$Bad.Characters = str_replace_all(exotic.chr.check$Bad.Names, "[a-z|A-Z]", "") # further reduce to just list of non-standard characters present in data
+write.table(exotic.chr.check,'corrupt.chars.txt', sep ="|", quote=FALSE, row.names = FALSE) # save list of 
+
+###### Fixing corrupted authority names (or other text)
+# NB simple replacement of all non-standard characters may be acceptable if just dealing with species names where these chars are not accepted.
+# However it is NOT straight forward if dealing with author names where non-standard english characters may be entirely appropriate.
+# If all corrupt characters code for the same correct character then a simple like-for-like replacement is appropriate.
+#BEWARE! Not all characters may be a one-to-one substitution. In the example of the GCD "?" substitutes for a host of special characters: ×,ı,Á,ă,ą,ã,ě,ę,ł,ý,ř,š,ş,Š,Ś,ø,Ó,Ø,ń,ğ,Č,ć,č,ž,'U
+# If corrupt characters have replaced multiple correct characters then a more bespoke replacement list is required.
+
+# Either way, you need to provide a list of either each corrupted character or word, and it's corrected replacement.
+# The list can either be imported from a text file or incuded in your code.
+# Each corrupt character in quotes is separated by a comma. NB special characters (eg "?") need to be escaped ("\?")
+
+#Example of a text file to read in to R:
+#NB SAVE AS UTF16 for greatest flexibility BUT must tell R to import as UTF16 (see below)
+
+#   corrupted,clean
+#   "Adamovi.","Adamović"
+#   "Ald‚n","Aldén"
+#   "Ar.nes","Arènes"
+#   "/?","×"
+#   "Ã¶","ö"
+#   "‚","é"
+#   "•","ò"
+#   "Š","è"
+
+#load in text file, telling R this is coded in UTF16
+char_sub <- read.csv("conversion.listUTF16.txt", fileEncoding = "UTF-16",sep=",", header = TRUE) #this is a *UTF16 ENCODED* comma delimited look-up table - first column "corrupted" is the corrupt name (in quotes) and a corresponding entry in second column "clean" is the clean version. 
+char_sub$clean <- as_utf8(char_sub$clean) # convert utf16-8 using utf8 package - this removes external code conversion issues and keeps R happy(er)
+char_sub$corrupted <- as_utf8(char_sub$corrupted)
+
+#Example of in-code creation of subsitution list:  
+
+char_sub <- read.csv(text="
+corrupted,clean
+Adamovi.,Adamović
+Ald‚n,"Aldén
+Ar.nes,Arènes
+/?,×
+Ã¶,ö
+‚,é
+•,ò
+Š,è"
+)
+
+
+#Using the conversion table above, loop through each entry and fix for column "NameFull" in dataframe "df.corrupt"" https://stackoverflow.com/questions/24058700/find-and-replace-words
+
+for(x in 1:nrow(char_sub))
+  df.corrupt$NameFull <- gsub(char_sub[x,"corrupted"],char_sub[x,"clean"], df.corrupt$NameFull)
+
+#It is worth running this now "clean" dataframe back through the step searching for corrupt characters to check for errors or overlooked characters.
+
+write.table(df.corrupt,'df.clean.txt', sep="|", quote=FALSE, row.names = FALSE) # output corrupt records. I like using pipe separator "|" instad of commas or tabs as it is least likely to conflict with characters in the text
+
