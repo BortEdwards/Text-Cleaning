@@ -45,12 +45,20 @@ write.csv(residual.Qmarks,'residual.Qmarks.txt', sep = "|", fileEncoding = "UTF-
 
 
 ###### Identify all special/potentially corrupt characters
-exotic.chr.check <- setDT(df.corrupt)[, .(NameFull=unlist(str_extract_all(NameFull, "\\w+([^ -~]|\\?)\\w+"))), by = NameFull] #pull out all words with non-ASCII characters (^ to ~) and question marks https://stackoverflow.com/questions/43708888/regex-matching-utf-8-pattern-in-r
-exotic.chr.check <- select(exotic.chr.check,-c(1)) # Remove unwanted first column
-colnames(exotic.chr.check)<-c('Bad.Names') # create new column
-exotic.chr.check$Bad.Names <- as.data.frame(unique(exotic.chr.check$NameFull)) # Reduce to unique instances of each word with non-standard character(s) in data
-exotic.chr.check$Bad.Characters = str_replace_all(exotic.chr.check$Bad.Names, "[a-z|A-Z]", "") # further reduce to just list of non-standard characters present in data
-write.table(exotic.chr.check,'corrupt.chars.txt', sep ="|", quote=FALSE, row.names = FALSE) # save list of 
+
+exotic.chr.check <- setDT(df.corrupt)[, .(Corrupt_Word=unlist(str_extract_all(NameFull, "\\w+([^ -~]|\\?)\\w+"))), by = NameFull] # pull out all words with non-ASCII characters (^ to ~) and question marks https://stackoverflow.com/questions/43708888/regex-matching-utf-8-pattern-in-r
+Unique.Bad.Names <- as.data.frame(unique(exotic.chr.check$Corrupt_Word)) # Pull out unique instances of each word with non-ASCII character(s)
+colnames(Unique.Bad.Names)<-c('Bad.Names')
+Unique.Bad.Names$Bad.Characters = str_replace_all(Unique.Bad.Names$Bad.Names, "[a-z|A-Z]", "") # add column with only the non-ASCII character
+write.table(exotic.chr.check,'corrupt.chars.txt', sep ="|", quote=FALSE, row.names = FALSE) # writes table with word and isolated non-ASCII character
+
+
+
+
+
+
+
+
 
 ###### Fixing corrupted authority names (or other text)
 # NB simple replacement of all non-standard characters may be acceptable if just dealing with species names where these chars are not accepted.
