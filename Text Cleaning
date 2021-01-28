@@ -70,7 +70,7 @@ write.table(exotic.chr.check,'corrupt.chars.txt', sep ="|", quote=FALSE, row.nam
 #   "Adamovi.","Adamović"
 #   "Ald‚n","Aldén"
 #   "Ar.nes","Arènes"
-#   "/?","×"
+#   "\?","×"
 #   "Ã¶","ö"
 #   "‚","é"
 #   "•","ò"
@@ -88,7 +88,7 @@ corrupted,clean
 Adamovi.,Adamović
 Ald‚n,"Aldén
 Ar.nes,Arènes
-/?,×
+\?,×
 Ã¶,ö
 ‚,é
 •,ò
