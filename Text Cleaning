@@ -50,14 +50,7 @@ exotic.chr.check <- setDT(df.corrupt)[, .(Corrupt_Word=unlist(str_extract_all(Na
 Unique.Bad.Names <- as.data.frame(unique(exotic.chr.check$Corrupt_Word)) # Pull out unique instances of each word with non-ASCII character(s)
 colnames(Unique.Bad.Names)<-c('Bad.Names')
 Unique.Bad.Names$Bad.Characters = str_replace_all(Unique.Bad.Names$Bad.Names, "[a-z|A-Z]", "") # add column with only the non-ASCII character
-write.table(exotic.chr.check,'corrupt.chars.txt', sep ="|", quote=FALSE, row.names = FALSE) # writes table with word and isolated non-ASCII character
-
-
-
-
-
-
-
+write.table(Unique.Bad.Names,'corrupt.chars.txt', sep ="|", quote=FALSE, row.names = FALSE, fileEncoding="UTF-8") # writes table with word containing non_ASCII character and isolated non-ASCII character as a UTF-8 text file
 
 
 ###### Fixing corrupted authority names (or other text)
